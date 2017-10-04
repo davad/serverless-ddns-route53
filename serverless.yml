@@ -1,7 +1,20 @@
 service: ddns-route53
 provider:
   name: aws
-  runtime: nodejs4.3
+  runtime: nodejs6.10
+  memorySize: 128
+  environment:
+    SHARED_SECRET: ${file(./.env.yml):SHARED_SECRET}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - route53:ChangeResourceRecordSets
+      Resource: 
+        Fn::Join:
+          - ""
+          - - "arn:aws:route53:::hostedzone/"
+            -  ${file(./.env.yml):hostedzone}
+
 functions:
   update:
     handler: handler.update
