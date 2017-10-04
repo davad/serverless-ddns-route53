@@ -16,9 +16,10 @@ module.exports.update = (event, context, cb) => {
     hosted_zone_id: event.queryStringParameters.hosted_zone_id,
     name: event.queryStringParameters.name
   }
- */
 
   hashed
+
+ */
 
   route53.changeResourceRecordSets({
     HostedZoneId: event.queryStringParameters.hosted_zone_id,
