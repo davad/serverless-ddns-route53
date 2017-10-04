@@ -1,4 +1,4 @@
-service: ddns-route53
+service: ddns-route53-${file(./.env.yml):hostedzone}
 provider:
   name: aws
   runtime: nodejs6.10
