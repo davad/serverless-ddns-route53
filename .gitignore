@@ -1,3 +1,2 @@
-serverless.env.yaml
 .serverless
-.env.yml
+node_modules
