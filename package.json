@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "serverless-dynamodb-local": "^0.2.25",
+    "serverless-offline": "^3.16.0",
+    "uuid": "^3.1.0"
+  }
+}

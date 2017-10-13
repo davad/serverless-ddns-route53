@@ -1,19 +1,47 @@
 service: ddns-route53-${file(./.env.yml):hostedzone}
+
+frameworkVersion: ">=1.1.0 <2.0.0"
+
+plugins:
+  - serverless-dynamodb-local
+  - serverless-offline
+
+custom:
+  dynamodb:
+    start:
+      port: 8000
+      inMemory: true
+      migrate: true
+      seed: true
+    seed:
+      domain:
+        sources:
+          - table: hostedzoneTable
+            sources: [./seed.json]
+
+
 provider:
   name: aws
   runtime: nodejs6.10
   memorySize: 128
   environment:
     SHARED_SECRET: ${file(./.env.yml):SHARED_SECRET}
+    DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
   iamRoleStatements:
-    - Effect: "Allow"
+    - Effect: Allow
       Action:
         - route53:ChangeResourceRecordSets
-      Resource: 
-        Fn::Join:
-          - ""
-          - - "arn:aws:route53:::hostedzone/"
-            -  ${file(./.env.yml):hostedzone}
+      Resource: "arn:aws:route53:::hostedzone/*"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+
 
 functions:
   update:
@@ -22,3 +50,24 @@ functions:
       - http:
           path: ddns/update
           method: get
+
+resources:
+  Resources:
+    hostedzoneTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: client_id
+            AttributeType: S
+          - AttributeName: fqdn
+            AttributeType: S
+        KeySchema:
+          - AttributeName: client_id
+            KeyType: HASH
+          - AttributeName: fqdn
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.DYNAMODB_TABLE}

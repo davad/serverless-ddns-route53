@@ -1,0 +1,10 @@
+[
+	{
+		"fqdn": "example.com", 
+		"client_id": "123",
+		"api_keys": [
+			"456"
+		],
+		"hosted_zone_id": "ABCD1234567890"
+	}
+]
