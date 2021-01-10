@@ -1,6 +1,6 @@
 [
 	{
-		"fqdn": "example.com", 
+		"fqdn": "dynamic.example.com", 
 		"client_id": "123",
 		"api_keys": [
 			"456"

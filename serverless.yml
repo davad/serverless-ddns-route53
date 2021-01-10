@@ -1,4 +1,4 @@
-service: ddns-route53-${file(./.env.yml):hostedzone}
+service: ddns-route53-dmwl
 
 frameworkVersion: ">=1.1.0 <2.0.0"
 
@@ -16,8 +16,12 @@ custom:
     seed:
       domain:
         sources:
-          - table: hostedzoneTable
-            sources: [./seed.json]
+          - table: aclTable
+            sources: [./seeds/acl.json]
+          - table: clientsTable
+            sources: [./seeds/clients.json]
+          - table: domainsTable
+            sources: [./seeds/domains.json]
 
 
 provider:
@@ -25,8 +29,7 @@ provider:
   runtime: nodejs6.10
   memorySize: 128
   environment:
-    SHARED_SECRET: ${file(./.env.yml):SHARED_SECRET}
-    DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+    DYNAMODB_TABLE_PREFIX: ${self:service}-${opt:stage, self:provider.stage}
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -40,7 +43,7 @@ provider:
         - dynamodb:PutItem
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
-      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE_PREFIX}-*"
 
 
 functions:
@@ -53,7 +56,7 @@ functions:
 
 resources:
   Resources:
-    hostedzoneTable:
+    aclTable:
       Type: 'AWS::DynamoDB::Table'
       DeletionPolicy: Retain
       Properties:
@@ -62,12 +65,56 @@ resources:
             AttributeType: S
           - AttributeName: fqdn
             AttributeType: S
+          - AttributeName: hosted_zone_id
+            AttributeType: S
         KeySchema:
           - AttributeName: client_id
             KeyType: HASH
           - AttributeName: fqdn
             KeyType: RANGE
+          - AttributeName: hosted_zone_id
+            KeyType: HASH
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
-        TableName: ${self:provider.environment.DYNAMODB_TABLE}
+        TableName: ${self:provider.environment.DYNAMODB_TABLE_PREFIX}-acl
+    domainsTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: hosted_zone_id
+            AttributeType: S
+          - AttributeName: domain
+            AttributeType: S
+        KeySchema:
+          - AttributeName: hosted_zone_id
+            KeyType: HASH
+          - AttributeName: domain
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.DYNAMODB_TABLE_PREFIX}-domains
+    clientsTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: client_id
+            AttributeType: S
+          - AttributeName: email
+            AttributeType: S
+          - AttributeName: name
+            AttributeType: S
+        KeySchema:
+          - AttributeName: client_id
+            KeyType: HASH
+          - AttributeName: email
+            KeyType: HASH
+          - AttributeName: name
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.DYNAMODB_TABLE_PREFIX}-clients
